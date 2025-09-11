@@ -3,7 +3,7 @@ import logging
 import json
 from celery import shared_task
 
-from .agent_tools import run_code_analysis_crew
+from .crew import run_code_analysis_crew
 from ..models.analysis import AnalysisResultData
 
 logger = logging.getLogger(__name__)

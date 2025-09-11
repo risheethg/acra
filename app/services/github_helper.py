@@ -1,5 +1,6 @@
 import base64
 from github import Github, GithubException
+import requests
 from urllib.parse import urlparse
 
 def get_pr_diff(repo_url: str, pr_number: int, token: str = None) -> str:
@@ -13,16 +14,15 @@ def get_pr_diff(repo_url: str, pr_number: int, token: str = None) -> str:
         repo = g.get_repo(repo_name)
         pr = repo.get_pull(pr_number)
         
-        # The diff is available as a raw string from the API
-        # We need to make a request to the diff_url
-        diff_content = pr.get_files()
-        diff_text = ""
-        for file in diff_content:
-            diff_text += f"--- a/{file.filename}\n"
-            diff_text += f"+++ b/{file.filename}\n"
-            diff_text += file.patch + "\n"
+        # Fetch the diff content directly from the PR's diff_url
+        # This provides the unified diff for the entire PR
+        headers = {'Authorization': f'token {token}'} if token else {}
+        headers['Accept'] = 'application/vnd.github.v3.diff'
         
-        return diff_text
+        response = requests.get(pr.diff_url, headers=headers)
+        response.raise_for_status() # Will raise an HTTPError for bad responses
+        
+        return response.text
     except GithubException as e:
         raise ConnectionError(f"Failed to connect to GitHub or find PR: {e.data}")
     except Exception as e:
