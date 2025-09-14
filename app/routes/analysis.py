@@ -11,8 +11,7 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# A simple in-memory cache for completed task results
-# In a distributed system, you would use a shared cache like Redis.
+# In-memory cache for completed task results. For production, use a distributed cache like Redis.
 results_cache: Dict[str, Any] = {}
 
 @router.post("/analyze-pr", status_code=status.HTTP_202_ACCEPTED, response_model=TaskStatusResponse)
