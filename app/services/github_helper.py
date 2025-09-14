@@ -38,6 +38,11 @@ def get_pr_diff(repo_url: str, pr_number: int, token: str | None = None) -> str:
         # If it doesn't, this will raise UnknownObjectException.
         _ = pr.title 
         
+        # Check if the PR is a draft, as they don't have a diff_url that works.
+        if pr.draft:
+            error_msg = f"Pull Request #{pr_number} in repository '{repo_name}' is a draft. Draft PRs cannot be analyzed."
+            raise GitHubConnectionError(error_msg)
+
         headers = {'Accept': 'application/vnd.github.v3.diff'}
         if token:
             headers['Authorization'] = f'token {token}'
