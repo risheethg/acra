@@ -1,0 +1,4 @@
+from crewai_tools import RagTool
+
+class GetPRDiffTool(RagTool):
+    pass

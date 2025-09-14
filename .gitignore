@@ -78,3 +78,7 @@ venv.bak
 *.swp
 *.swo
 *~
+gak.txt
+
+check_env.py
+debug_github.py

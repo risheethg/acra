@@ -5,21 +5,20 @@ from typing import Dict, Any
 
 from ..models.analysis import PRAnalysisRequest, TaskStatusResponse, TaskResultResponse
 from ..core.celery_app import celery_app
-from ..services.tasks import run_code_analysis_task
+from app.services.tasks import run_code_analysis_task
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
-# A simple in-memory cache for completed task results
-# In a distributed system, you would use a shared cache like Redis.
+# In-memory cache for completed task results. For production, use a distributed cache like Redis.
 results_cache: Dict[str, Any] = {}
 
 @router.post("/analyze-pr", status_code=status.HTTP_202_ACCEPTED, response_model=TaskStatusResponse)
 async def analyze_pr(request: PRAnalysisRequest = Body(...)):
     """Accepts GitHub PR details and queues the analysis."""
     logger.info(f"Received analysis request for {request.repo_url} PR #{request.pr_number}")
-    task = run_code_analysis_task.delay(request.repo_url, request.pr_number, request.github_token)
+    task = run_code_analysis_task.delay(str(request.repo_url), request.pr_number, request.github_token)
     logger.info(f"Task {task.id} queued for analysis.")
     return {"task_id": task.id, "status": "PENDING"}
 

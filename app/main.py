@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from .routes import analysis
-from core.logging import setup_logging
+from .core.logging import setup_logging
 
 # Set up logging as soon as the application starts
 setup_logging()
