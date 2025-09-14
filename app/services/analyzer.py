@@ -35,7 +35,7 @@ def analyze_code_with_langchain(pr_diff: str) -> str:
     and returns a structured JSON string.
     """
     llm = ChatGoogleGenerativeAI(
-        model="gemini-1.5-flash-latest",
+        model="gemini-2.5-flash",
         temperature=0.1,
         google_api_key=settings.GOOGLE_API_KEY
     )
@@ -68,6 +68,35 @@ def analyze_code_with_langchain(pr_diff: str) -> str:
 
     # Invoke the chain with the PR diff.
     result_object = chain.invoke({"pr_diff": pr_diff})
+
+    FILTER_STRING = "Missing newline at the end of the file"
+
+    # Create a new list of files, filtering issues within each file
+    filtered_files = []
+    for file_analysis in result_object.files:
+        # Use a list comprehension to keep only the issues that DON'T match the filter string
+        filtered_issues = [
+            issue for issue in file_analysis.issues 
+            if FILTER_STRING not in issue.description
+        ]
+        
+        # If the file still has issues after filtering, add it to our new list
+        if filtered_issues:
+            file_analysis.issues = filtered_issues
+            filtered_files.append(file_analysis)
+
+    # Replace the original files list with the filtered one
+    result_object.files = filtered_files
+
+    # Recalculate the summary based on the filtered results
+    total_issues = sum(len(file.issues) for file in result_object.files)
+    critical_issues = sum(
+        1 for file in result_object.files 
+        for issue in file.issues if issue.type.lower() == 'bug'
+    )
+    result_object.summary.total_files = len(result_object.files)
+    result_object.summary.total_issues = total_issues
+    result_object.summary.critical_issues = critical_issues
 
     # Return the Pydantic model as a JSON string.
     return result_object.json()
