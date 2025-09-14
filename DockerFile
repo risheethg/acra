@@ -1,20 +1,31 @@
-FROM python:3.11-slim AS base
+# Stage 1: Builder - To install dependencies
+FROM python:3.11-slim AS builder
 
+# Set the working directory
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    && rm -rf /var/lib/apt/lists/*
+# Install build tools
+RUN apt-get update && apt-get install -y --no-install-recommends build-essential && rm -rf /var/lib/apt/lists/*
 
-FROM base AS builder
-
+# Copy and install requirements
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-FROM base
+# Stage 2: Final Image - For running the application
+FROM python:3.11-slim AS final
 
+# Set a non-root user for security
+RUN useradd --create-home appuser
+USER appuser
+WORKDIR /home/appuser/app
+
+# Copy installed packages from the builder stage
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 
-COPY . .
+# Copy the application source code into the final image
+# This ensures the structure is always correct
+COPY --chown=appuser:appuser ./app ./app
 
-EXPOSE 8000
+# Set the Python Path explicitly to the working directory
+ENV PYTHONPATH=.
+

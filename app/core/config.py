@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     """
     # Celery settings
     REDIS_URL: str = ""
-    GEMINI_API_KEY: str= ""
+    GOOGLE_API_KEY: str= ""
     GITHUB_ACCESS_TOKEN:str= ""
 
     # Pydantic settings configuration
