@@ -119,39 +119,9 @@ It is built with Python, FastAPI, Celery, Redis, and uses the Google Gemini API 
 
 A `docker-compose.yml` is the recommended way to run all services together.
 
-1.  Create a `docker-compose.yml` file in the root of the project with the following content:
+1.  Ensure your `.env` file is configured correctly, especially `REDIS_URL=redis://redis:6379/0`. Use `.env.template` as a guide.
 
-    ```yaml
-    version: '3.8'
-
-    services:
-      redis:
-        image: redis:alpine
-        ports:
-          - "6379:6379"
-
-      api:
-        build: .
-        ports:
-          - "8000:8000"
-        depends_on:
-          - redis
-        env_file:
-          - .env
-        command: uvicorn app.main:app --host 0.0.0.0 --port 8000
-
-      worker:
-        build: .
-        depends_on:
-          - redis
-        env_file:
-          - .env
-        command: celery -A app.core.celery_app:celery_app worker --loglevel=info
-    ```
-
-2.  Ensure your `.env` file is configured correctly, especially `REDIS_URL=redis://redis:6379/0`.
-
-3.  Build and run the services:
+2.  Build and run the services:
     ```bash
     docker-compose up --build
     ```
@@ -239,29 +209,3 @@ The project uses `pytest` for testing. The tests are configured to run synchrono
 ```bash
 pytest
 ```
-
-## Deployment
-
-This project is configured for deployment on Render via the `render.yaml` file.
-
-1.  Fork this repository to your GitHub account.
-2.  On the Render Dashboard, click "New" -> "Blueprint".
-3.  Connect the forked repository. Render will automatically detect `render.yaml` and configure the services (API, worker, and Redis).
-4.  You will need to add your `GOOGLE_API_KEY` and optional `GITHUB_ACCESS_TOKEN` as secret environment variables in the Render dashboard for the `code-review-api` and `celery-worker` services.
-
-## Design Decisions
-
-1.  **FastAPI over Flask/Django**: Chosen for its high performance, asynchronous support (which pairs well with Celery), and automatic interactive API documentation (Swagger UI).
-2.  **Celery for Asynchronous Tasks**: Code analysis by an LLM can be slow. Celery allows us to offload this work to a background worker, keeping the API responsive and providing a task ID for clients to poll for results.
-3.  **Redis as Broker and Backend**: Redis is lightweight, fast, and simple to set up, making it an excellent choice for both Celery's message broker and its result backend.
-4.  **LangChain with Structured Output**: Instead of simple prompting, the application uses LangChain's `with_structured_output` feature. This forces the LLM to return a JSON object that conforms to a Pydantic model (`AnalysisResultData`), eliminating the need for fragile string parsing and ensuring a reliable data structure.
-5.  **Decoupled Services**: The API (FastAPI), the background worker (Celery), and the business logic (services) are decoupled. This makes the system easier to test, maintain, and scale. For example, we can add more Celery workers to handle a higher load without changing the API code.
-6.  **In-Memory Caching**: A simple dictionary cache was added to the `/results` endpoint. This is a pragmatic choice for a quick performance boost, preventing repeated queries to the Celery result backend for the same completed task. For a production system, this would be replaced with a distributed cache like Redis.
-
-## Future Improvements
-
-- **Replace In-Memory Cache with Redis**: The current `results_cache` is not shared between multiple API instances. Replacing it with Redis would create a distributed cache, improving performance and consistency in a scaled environment.
-- **GitHub Webhook Integration**: Instead of manually polling, the system could be triggered automatically when a pull request is opened or updated by implementing a GitHub App or webhook handler.
-- **Interactive Feedback**: The agent could post comments directly on the GitHub pull request, making the feedback loop more interactive for developers.
-- **Enhanced Agent Capabilities**: The agent could be enhanced with more tools, such as the ability to run linters or static analysis tools on the codebase to supplement the LLM's review.
-- **Rate Limiting**: Implement rate limiting on the API endpoints to prevent abuse and ensure fair usage.
