@@ -1,15 +1,15 @@
 services:
   - type: redis
     name: redis-cache
-    plan: free 
-    ipAllowList: [] 
+    plan: free
+    ipAllowList: []
     maxmemoryPolicy: allkeys-lru
 
   - type: web
     name: code-review-api
     env: python
-    plan: free 
-    buildCommand: "pip install -r requirements.txt"
+    plan: free
+    buildCommand: "pip install --no-binary :all: -r requirements.txt"
     startCommand: "python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     healthCheckPath: /docs
     envVars:
@@ -20,17 +20,16 @@ services:
           type: redis
           name: redis-cache
           property: connectionString
-      - key: GEMINI_API_KEY 
-        sync: false 
-      - key: GITHUB_ACCESS_TOKEN 
-        sync: false 
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GITHUB_ACCESS_TOKEN
+        sync: false
 
- 
-  - type: web 
+  - type: web
     name: celery-worker
     env: python
     plan: free
-    buildCommand: "pip install -r requirements.txt"
+    buildCommand: "pip install --no-binary :all: -r requirements.txt"
     startCommand: "python -m celery -A app.core.celery_app:celery_app worker --loglevel=info"
     envVars:
       - key: PYTHON_VERSION
