@@ -19,3 +19,5 @@ ollama
 
 pytest
 httpx
+
+crewai_tools==<desired_version>
